@@ -22,7 +22,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -92,110 +91,6 @@ public class JdbcAggregateTemplateWithSchemaIntegrationTests {
 		ListParent reloaded = template.findById(entity.id, ListParent.class);
 
 		assertThat(reloaded.content).extracting(e -> e.content).containsExactly("content");
-	}
-
-	@Test // DATAJDBC-259
-	public void saveAndLoadAnEntityWithList() {
-
-		// MySQL and others do not support array datatypes. See
-		// https://dev.mysql.com/doc/refman/8.0/en/data-type-overview.html
-		assumeNot("mysql");
-		assumeNot("mariadb");
-		assumeNot("mssql");
-
-		ListOwner arrayOwner = new ListOwner();
-		arrayOwner.digits.addAll(Arrays.asList("one", "two", "three"));
-
-		ListOwner saved = template.save(arrayOwner);
-
-		assertThat(saved.id).isNotNull();
-
-		ListOwner reloaded = template.findById(saved.id, ListOwner.class);
-
-		assertThat(reloaded).isNotNull();
-		assertThat(reloaded.id).isEqualTo(saved.id);
-		assertThat(reloaded.digits).isEqualTo(Arrays.asList("one", "two", "three"));
-	}
-
-	@Test // DATAJDBC-259
-	public void saveAndLoadAnEntityWithSet() {
-
-		// MySQL and others do not support array datatypes. See
-		// https://dev.mysql.com/doc/refman/8.0/en/data-type-overview.html
-		assumeNot("mysql");
-		assumeNot("mariadb");
-		assumeNot("mssql");
-
-		SetOwner setOwner = new SetOwner();
-		setOwner.digits.addAll(Arrays.asList("one", "two", "three"));
-
-		SetOwner saved = template.save(setOwner);
-
-		assertThat(saved.id).isNotNull();
-
-		SetOwner reloaded = template.findById(saved.id, SetOwner.class);
-
-		assertThat(reloaded).isNotNull();
-		assertThat(reloaded.id).isEqualTo(saved.id);
-		assertThat(reloaded.digits).isEqualTo(new HashSet<>(Arrays.asList("one", "two", "three")));
-	}
-
-	@Test // DATAJDBC-340
-	public void saveAndLoadLongChain() {
-
-		Chain4 chain4 = new Chain4();
-		chain4.fourValue = "omega";
-		chain4.chain3 = new Chain3();
-		chain4.chain3.threeValue = "delta";
-		chain4.chain3.chain2 = new Chain2();
-		chain4.chain3.chain2.twoValue = "gamma";
-		chain4.chain3.chain2.chain1 = new Chain1();
-		chain4.chain3.chain2.chain1.oneValue = "beta";
-		chain4.chain3.chain2.chain1.chain0 = new Chain0();
-		chain4.chain3.chain2.chain1.chain0.zeroValue = "alpha";
-
-		template.save(chain4);
-
-		Chain4 reloaded = template.findById(chain4.four, Chain4.class);
-
-		assertThat(reloaded).isNotNull();
-
-		assertThat(reloaded.four).isEqualTo(chain4.four);
-		assertThat(reloaded.chain3.chain2.chain1.chain0.zeroValue).isEqualTo(chain4.chain3.chain2.chain1.chain0.zeroValue);
-
-		template.delete(chain4, Chain4.class);
-
-		assertThat(count("CHAIN0")).isEqualTo(0);
-	}
-
-	@Test // DATAJDBC-359
-	public void saveAndLoadLongChainWithoutIds() {
-
-		NoIdChain4 chain4 = new NoIdChain4();
-		chain4.fourValue = "omega";
-		chain4.chain3 = new NoIdChain3();
-		chain4.chain3.threeValue = "delta";
-		chain4.chain3.chain2 = new NoIdChain2();
-		chain4.chain3.chain2.twoValue = "gamma";
-		chain4.chain3.chain2.chain1 = new NoIdChain1();
-		chain4.chain3.chain2.chain1.oneValue = "beta";
-		chain4.chain3.chain2.chain1.chain0 = new NoIdChain0();
-		chain4.chain3.chain2.chain1.chain0.zeroValue = "alpha";
-
-		template.save(chain4);
-
-		assertThat(chain4.four).isNotNull();
-
-		NoIdChain4 reloaded = template.findById(chain4.four, NoIdChain4.class);
-
-		assertThat(reloaded).isNotNull();
-
-		assertThat(reloaded.four).isEqualTo(chain4.four);
-		assertThat(reloaded.chain3.chain2.chain1.chain0.zeroValue).isEqualTo(chain4.chain3.chain2.chain1.chain0.zeroValue);
-
-		template.delete(chain4, NoIdChain4.class);
-
-		assertThat(count("CHAIN0")).isEqualTo(0);
 	}
 
 	@Test // DATAJDBC-223
@@ -337,7 +232,7 @@ public class JdbcAggregateTemplateWithSchemaIntegrationTests {
 	}
 
 	private Long count(String tableName) {
-		return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + tableName, emptyMap(), Long.class);
+		return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM DEMO." + tableName, emptyMap(), Long.class);
 	}
 
 	private static void assumeNot(String dbProfileName) {
@@ -360,14 +255,14 @@ public class JdbcAggregateTemplateWithSchemaIntegrationTests {
 		byte[] binaryData;
 	}
 
-	@Table("ARRAY_OWNER")
+	@Table("DEMO.ARRAY_OWNER")
 	private static class ListOwner {
 		@Id Long id;
 
 		List<String> digits = new ArrayList<>();
 	}
 
-	@Table("ARRAY_OWNER")
+	@Table("DEMO.ARRAY_OWNER")
 	private static class SetOwner {
 		@Id Long id;
 
